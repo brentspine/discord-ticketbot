@@ -14,6 +14,7 @@ import eu.greev.dcbot.ticketsystem.interactions.modals.TicketModal;
 import eu.greev.dcbot.ticketsystem.service.RatingData;
 import eu.greev.dcbot.ticketsystem.service.TicketData;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
+import eu.greev.dcbot.ticketsystem.service.XpService;
 import eu.greev.dcbot.utils.Config;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -100,7 +101,8 @@ public class Main {
         TicketData ticketData = new TicketData(jda, jdbi);
         RatingData ratingData = new RatingData(jdbi);
         TicketService ticketService = new TicketService(jda, config, jdbi, ticketData);
-        jda.addEventListener(new TicketListener(ticketService, config, jda));
+        XpService xpService = new XpService(config);
+        jda.addEventListener(new TicketListener(ticketService, config, jda, xpService));
 
         registerCategory(new General(), config, ticketService, ticketData);
         registerCategory(new Report(), config, ticketService, ticketData);
@@ -155,7 +157,7 @@ public class Main {
                 })
         );
 
-        new HourlyScheduler(config, ticketService, ticketData, jda).start();
+        new HourlyScheduler(config, ticketService, ticketData, jda, xpService).start();
         new DailyScheduler(ticketService).start();
         ratingStatsScheduler = new RatingStatsScheduler(config, ratingData, ticketData, jda);
         ratingStatsScheduler.start();
@@ -199,8 +201,8 @@ public class Main {
 
         registerInteraction("ticket-confirm-rating", new TicketConfirmRating(ticketService, config));
         registerInteraction("rating-select", new RatingSelect(ticketService));
-        registerInteraction("rating-modal", new RatingModal(ticketService, ratingData, config, jda));
-        registerInteraction("rating-skip", new RatingSkip(ticketService, config, jda));
+        registerInteraction("rating-modal", new RatingModal(ticketService, ratingData, config, jda, xpService));
+        registerInteraction("rating-skip", new RatingSkip(ticketService, config, jda, xpService));
         registerInteraction("rating-stats", new RatingStats(config, ticketService, missingPerm, jda, ratingData));
         registerInteraction("debug-stats", new DebugStats(config, ticketService, missingPerm, jda));
 

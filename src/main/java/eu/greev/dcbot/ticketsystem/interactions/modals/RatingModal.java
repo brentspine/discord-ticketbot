@@ -5,6 +5,7 @@ import eu.greev.dcbot.ticketsystem.entities.Ticket;
 import eu.greev.dcbot.ticketsystem.interactions.Interaction;
 import eu.greev.dcbot.ticketsystem.service.RatingData;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
+import eu.greev.dcbot.ticketsystem.service.XpService;
 import eu.greev.dcbot.utils.Config;
 import me.ryzeon.transcripts.DiscordHtmlTranscripts;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,7 @@ public class RatingModal implements Interaction {
     private final RatingData ratingData;
     private final Config config;
     private final JDA jda;
+    private final XpService xpService;
 
     @Override
     public void execute(Event evt) {
@@ -86,6 +88,15 @@ public class RatingModal implements Interaction {
                 .build();
 
         ratingData.saveRating(rating);
+
+        // Award XP to the supporter
+        if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
+            xpService.awardTicketXp(
+                    ticket.getTextChannel().getId(),
+                    ticket.getSupporter().getId(),
+                    stars
+            );
+        }
 
         String starDisplay = getStarDisplay(stars);
         EmbedBuilder confirmation = new EmbedBuilder()

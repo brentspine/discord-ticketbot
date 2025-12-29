@@ -3,6 +3,7 @@ package eu.greev.dcbot.scheduler;
 import eu.greev.dcbot.ticketsystem.entities.Ticket;
 import eu.greev.dcbot.ticketsystem.service.TicketData;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
+import eu.greev.dcbot.ticketsystem.service.XpService;
 import eu.greev.dcbot.utils.Config;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class HourlyScheduler {
     private TicketService ticketService;
     private TicketData ticketData;
     private JDA jda;
+    private XpService xpService;
 
     public void start() {
         scheduler.scheduleAtFixedRate(this::run, getInitialDelay(), 60 * 60, TimeUnit.SECONDS);
@@ -83,6 +85,14 @@ public class HourlyScheduler {
                             .isBefore(Instant.now().atZone(ZoneId.of("UTC")).toOffsetDateTime());
 
             if (shouldClose) {
+                // Award XP BEFORE closing (so backend can fetch channel messages)
+                if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
+                    xpService.awardTicketXp(
+                            ticket.getTextChannel().getId(),
+                            ticket.getSupporter().getId(),
+                            null  // No rating (auto-closed)
+                    );
+                }
                 ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Automatic close due to inactivity");
                 autoClosures++;
             } else if (shouldRemind) {
@@ -140,6 +150,14 @@ public class HourlyScheduler {
                                 .isBefore(Instant.now());
 
                 if (shouldAutoCloseRating) {
+                    // Award XP BEFORE closing (so backend can fetch channel messages)
+                    if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
+                        xpService.awardTicketXp(
+                                ticket.getTextChannel().getId(),
+                                ticket.getSupporter().getId(),
+                                null  // No rating (auto-closed)
+                        );
+                    }
                     ticket.setPendingRating(false);
                     ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Closed without rating (no response)");
                     ratingAutoClosures++;

@@ -2,6 +2,7 @@ package eu.greev.dcbot.ticketsystem.interactions.buttons;
 
 import eu.greev.dcbot.ticketsystem.entities.Ticket;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
+import eu.greev.dcbot.ticketsystem.service.XpService;
 import eu.greev.dcbot.utils.Config;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class RatingSkip extends AbstractButton {
     private final TicketService ticketService;
     private final Config config;
     private final JDA jda;
+    private final XpService xpService;
 
     @Override
     public void execute(Event evt) {
@@ -59,6 +61,15 @@ public class RatingSkip extends AbstractButton {
         if (!ticket.isPendingRating()) {
             event.reply("This ticket is no longer awaiting a rating.").setEphemeral(true).queue();
             return;
+        }
+
+        // Award XP BEFORE closing (so backend can fetch channel messages)
+        if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
+            xpService.awardTicketXp(
+                    ticket.getTextChannel().getId(),
+                    ticket.getSupporter().getId(),
+                    null  // No rating (skipped)
+            );
         }
 
         // Send skip notification (with transcript but no rating)
