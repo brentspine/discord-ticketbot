@@ -89,14 +89,8 @@ public class RatingModal implements Interaction {
 
         ratingData.saveRating(rating);
 
-        // Award XP to the supporter
-        if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
-            xpService.awardTicketXp(
-                    ticket.getTextChannel().getId(),
-                    ticket.getSupporter().getId(),
-                    stars
-            );
-        }
+        // Award XP to the supporter (async - sends full ticket data)
+        xpService.awardTicketXp(ticket, stars);
 
         String starDisplay = getStarDisplay(stars);
         EmbedBuilder confirmation = new EmbedBuilder()

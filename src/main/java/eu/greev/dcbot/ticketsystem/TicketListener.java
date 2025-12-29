@@ -74,14 +74,8 @@ public class TicketListener extends ListenerAdapter {
             ticket.getTextChannel().sendMessage(messageBuilder.build()).queue();
 
             if (ticket.isPendingRating()) {
-                // Award XP BEFORE closing (so backend can fetch channel messages)
-                if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
-                    xpService.awardTicketXp(
-                            ticket.getTextChannel().getId(),
-                            ticket.getSupporter().getId(),
-                            null  // No rating (member left)
-                    );
-                }
+                // Award XP (async - sends full ticket data, no rating since member left)
+                xpService.awardTicketXp(ticket, null);
                 ticket.setPendingRating(false);
                 ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Closed without rating (member left the server)");
             }

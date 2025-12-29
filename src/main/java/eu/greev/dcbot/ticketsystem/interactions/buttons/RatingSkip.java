@@ -63,14 +63,8 @@ public class RatingSkip extends AbstractButton {
             return;
         }
 
-        // Award XP BEFORE closing (so backend can fetch channel messages)
-        if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
-            xpService.awardTicketXp(
-                    ticket.getTextChannel().getId(),
-                    ticket.getSupporter().getId(),
-                    null  // No rating (skipped)
-            );
-        }
+        // Award XP (async - sends full ticket data, no rating since skipped)
+        xpService.awardTicketXp(ticket, null);
 
         // Send skip notification (with transcript but no rating)
         String transcriptUrl = sendSkipNotification(ticket);

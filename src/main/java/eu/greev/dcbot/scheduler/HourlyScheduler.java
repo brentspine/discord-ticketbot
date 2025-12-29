@@ -85,14 +85,8 @@ public class HourlyScheduler {
                             .isBefore(Instant.now().atZone(ZoneId.of("UTC")).toOffsetDateTime());
 
             if (shouldClose) {
-                // Award XP BEFORE closing (so backend can fetch channel messages)
-                if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
-                    xpService.awardTicketXp(
-                            ticket.getTextChannel().getId(),
-                            ticket.getSupporter().getId(),
-                            null  // No rating (auto-closed)
-                    );
-                }
+                // Award XP (async - sends full ticket data, no rating since auto-closed)
+                xpService.awardTicketXp(ticket, null);
                 ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Automatic close due to inactivity");
                 autoClosures++;
             } else if (shouldRemind) {
@@ -150,14 +144,8 @@ public class HourlyScheduler {
                                 .isBefore(Instant.now());
 
                 if (shouldAutoCloseRating) {
-                    // Award XP BEFORE closing (so backend can fetch channel messages)
-                    if (ticket.getSupporter() != null && ticket.getTextChannel() != null) {
-                        xpService.awardTicketXp(
-                                ticket.getTextChannel().getId(),
-                                ticket.getSupporter().getId(),
-                                null  // No rating (auto-closed)
-                        );
-                    }
+                    // Award XP (async - sends full ticket data, no rating since auto-closed)
+                    xpService.awardTicketXp(ticket, null);
                     ticket.setPendingRating(false);
                     ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Closed without rating (no response)");
                     ratingAutoClosures++;
