@@ -12,6 +12,7 @@ import eu.greev.dcbot.ticketsystem.interactions.modals.RatingModal;
 import eu.greev.dcbot.ticketsystem.interactions.modals.TicketConfirmMessageModal;
 import eu.greev.dcbot.ticketsystem.interactions.modals.TicketModal;
 import eu.greev.dcbot.ticketsystem.service.RatingData;
+import eu.greev.dcbot.ticketsystem.service.SupporterSettingsData;
 import eu.greev.dcbot.ticketsystem.service.TicketData;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
 import eu.greev.dcbot.ticketsystem.service.XpService;
@@ -100,8 +101,9 @@ public class Main {
 
         TicketData ticketData = new TicketData(jda, jdbi);
         RatingData ratingData = new RatingData(jdbi);
+        SupporterSettingsData supporterSettingsData = new SupporterSettingsData(jdbi);
         TicketService ticketService = new TicketService(jda, config, jdbi, ticketData);
-        XpService xpService = new XpService(config);
+        XpService xpService = new XpService(config, supporterSettingsData);
         jda.addEventListener(new TicketListener(ticketService, config, jda, xpService));
 
         registerCategory(new General(), config, ticketService, ticketData);
@@ -148,6 +150,8 @@ public class Main {
                 .addSubcommands(new SubcommandData("rating-stats", "Show rating statistics"))
                 .addSubcommands(new SubcommandData("debug-stats", "Preview daily/weekly/monthly stats")
                         .addOption(OptionType.STRING, "type", "Report type: daily, weekly, monthly", true))
+                .addSubcommands(new SubcommandData("set-privacy", "Toggle ob deine XP/Ratings öffentlich angezeigt werden")
+                        .addOption(OptionType.STRING, "mode", "visible oder hidden", true))
         ).queue(s -> s.get(0).getSubcommands().forEach(c -> {
                     if (c.getName().equals("get-tickets")) {
                         getTicketCommandId = c.getId();
@@ -159,7 +163,7 @@ public class Main {
 
         new HourlyScheduler(config, ticketService, ticketData, jda, xpService).start();
         new DailyScheduler(ticketService).start();
-        ratingStatsScheduler = new RatingStatsScheduler(config, ratingData, ticketData, jda);
+        ratingStatsScheduler = new RatingStatsScheduler(config, ratingData, ticketData, jda, supporterSettingsData);
         ratingStatsScheduler.start();
 
         EmbedBuilder missingPerm = new EmbedBuilder().setColor(Color.RED)
@@ -201,10 +205,11 @@ public class Main {
 
         registerInteraction("ticket-confirm-rating", new TicketConfirmRating(ticketService, config));
         registerInteraction("rating-select", new RatingSelect(ticketService));
-        registerInteraction("rating-modal", new RatingModal(ticketService, ratingData, config, jda, xpService));
-        registerInteraction("rating-skip", new RatingSkip(ticketService, config, jda, xpService));
+        registerInteraction("rating-modal", new RatingModal(ticketService, ratingData, config, jda, xpService, supporterSettingsData));
+        registerInteraction("rating-skip", new RatingSkip(ticketService, config, jda, xpService, supporterSettingsData));
         registerInteraction("rating-stats", new RatingStats(config, ticketService, missingPerm, jda, ratingData));
         registerInteraction("debug-stats", new DebugStats(config, ticketService, missingPerm, jda));
+        registerInteraction("set-privacy", new SetPrivacy(config, ticketService, missingPerm, jda, supporterSettingsData));
 
         log.info("Started: {}", OffsetDateTime.now(ZoneId.systemDefault()));
 

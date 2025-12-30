@@ -18,9 +18,11 @@ public class XpService {
     private final Config config;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final SupporterSettingsData supporterSettingsData;
 
-    public XpService(Config config) {
+    public XpService(Config config, SupporterSettingsData supporterSettingsData) {
         this.config = config;
+        this.supporterSettingsData = supporterSettingsData;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -104,6 +106,9 @@ public class XpService {
             }
             List<String> helperIds = new ArrayList<>(helperIdSet);
 
+            // Check privacy setting for supporter
+            boolean hideStats = supporterSettingsData.isHideStats(supporterId);
+
             // Build request body with all data
             Map<String, Object> body = new HashMap<>();
             body.put("channelId", channelId);
@@ -114,6 +119,7 @@ public class XpService {
             body.put("initialReason", initialReason);
             body.put("messages", messages);
             body.put("helperIds", helperIds);
+            body.put("hideStats", hideStats);
             if (rating != null) {
                 body.put("rating", rating);
             }

@@ -4,11 +4,11 @@ import eu.greev.dcbot.ticketsystem.entities.Rating;
 import eu.greev.dcbot.ticketsystem.entities.Ticket;
 import eu.greev.dcbot.ticketsystem.interactions.Interaction;
 import eu.greev.dcbot.ticketsystem.service.RatingData;
+import eu.greev.dcbot.ticketsystem.service.SupporterSettingsData;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
 import eu.greev.dcbot.ticketsystem.service.XpService;
 import eu.greev.dcbot.utils.Config;
 import me.ryzeon.transcripts.DiscordHtmlTranscripts;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
@@ -21,13 +21,22 @@ import java.awt.*;
 import java.time.Instant;
 
 @Slf4j
-@AllArgsConstructor
 public class RatingModal implements Interaction {
     private final TicketService ticketService;
     private final RatingData ratingData;
     private final Config config;
     private final JDA jda;
     private final XpService xpService;
+    private final SupporterSettingsData supporterSettingsData;
+
+    public RatingModal(TicketService ticketService, RatingData ratingData, Config config, JDA jda, XpService xpService, SupporterSettingsData supporterSettingsData) {
+        this.ticketService = ticketService;
+        this.ratingData = ratingData;
+        this.config = config;
+        this.jda = jda;
+        this.xpService = xpService;
+        this.supporterSettingsData = supporterSettingsData;
+    }
 
     @Override
     public void execute(Event evt) {
@@ -162,14 +171,25 @@ public class RatingModal implements Interaction {
             return transcriptUrl;
         }
 
+        // Check privacy setting for supporter
+        boolean hideStats = supporterSettingsData.isHideStats(ticket.getSupporter().getId());
+        String displayName = hideStats ? "Anonym" : ticket.getSupporter().getAsMention();
+        String displayStars = hideStats ? "???" : stars + " Sterne";
+        String displayStarIcons = hideStats ? "★★★★★" : starDisplay;
+        String thumbnailUrl = hideStats ? null : ticket.getSupporter().getEffectiveAvatarUrl();
+        String displayFeedback = hideStats ? "Versteckt" : ((message != null && !message.isBlank()) ? message : "Kein Feedback");
+
         EmbedBuilder notification = new EmbedBuilder()
                 .setColor(embedColor)
                 .setTitle("Ticket #" + ticket.getId() + " closed")
-                .setDescription(ticket.getSupporter().getAsMention() + " hat **" + stars + " Sterne** " + starDisplay + " erhalten und ein Ticket gelöst!")
-                .setThumbnail(ticket.getSupporter().getEffectiveAvatarUrl())
+                .setDescription(displayName + " hat **" + displayStars + "** " + displayStarIcons + " erhalten und ein Ticket gelöst!")
                 .setFooter(config.getServerName(), config.getServerLogo());
 
-        notification.addField("Feedback", (message != null && !message.isBlank()) ? message : "Kein Feedback", false);
+        if (thumbnailUrl != null) {
+            notification.setThumbnail(thumbnailUrl);
+        }
+
+        notification.addField("Feedback", displayFeedback, false);
 
         // Only add transcript link for non-sensitive categories
         if (transcriptUrl != null && !ticket.getCategory().isSensitive()) {

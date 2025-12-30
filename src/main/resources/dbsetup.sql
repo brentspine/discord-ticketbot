@@ -93,3 +93,13 @@ CREATE TABLE IF NOT EXISTS ratings
 
     FOREIGN KEY (ticketID) REFERENCES tickets (ticketID)
 );
+CREATE TABLE IF NOT EXISTS supporter_settings
+(
+    discordId VARCHAR PRIMARY KEY NOT NULL,
+
+    hideStats BOOL DEFAULT 0      NOT NULL,
+
+    createdAt BIGINT              NOT NULL,
+
+    updatedAt BIGINT              NOT NULL
+);

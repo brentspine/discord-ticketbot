@@ -1,6 +1,7 @@
 package eu.greev.dcbot.scheduler;
 
 import eu.greev.dcbot.ticketsystem.service.RatingData;
+import eu.greev.dcbot.ticketsystem.service.SupporterSettingsData;
 import eu.greev.dcbot.ticketsystem.service.TicketData;
 import eu.greev.dcbot.utils.Config;
 import lombok.extern.slf4j.Slf4j;
@@ -30,12 +31,14 @@ public class RatingStatsScheduler {
     private final RatingData ratingData;
     private final TicketData ticketData;
     private final JDA jda;
+    private final SupporterSettingsData supporterSettingsData;
 
-    public RatingStatsScheduler(Config config, RatingData ratingData, TicketData ticketData, JDA jda) {
+    public RatingStatsScheduler(Config config, RatingData ratingData, TicketData ticketData, JDA jda, SupporterSettingsData supporterSettingsData) {
         this.config = config;
         this.ratingData = ratingData;
         this.ticketData = ticketData;
         this.jda = jda;
+        this.supporterSettingsData = supporterSettingsData;
     }
 
     public void start() {
@@ -297,8 +300,11 @@ public class RatingStatsScheduler {
         int count = 0;
         for (var entry : ticketsBySupporter.entrySet()) {
             if (count >= limit) break;
-            String mention = getUserMention(entry.getKey());
-            sb.append(mention).append(": **").append(entry.getValue()).append("** Tickets\n");
+            String userId = entry.getKey();
+            boolean hideStats = supporterSettingsData.isHideStats(userId);
+            String mention = hideStats ? "Anonym" : getUserMention(userId);
+            String ticketCount = hideStats ? "???" : String.valueOf(entry.getValue());
+            sb.append(mention).append(": **").append(ticketCount).append("** Tickets\n");
             count++;
         }
         return sb.toString().trim();
@@ -309,9 +315,12 @@ public class RatingStatsScheduler {
         int rank = 1;
         for (var entry : ticketsBySupporter.entrySet()) {
             if (rank > limit) break;
-            String mention = getUserMention(entry.getKey());
+            String userId = entry.getKey();
+            boolean hideStats = supporterSettingsData.isHideStats(userId);
+            String mention = hideStats ? "Anonym" : getUserMention(userId);
+            String ticketCount = hideStats ? "???" : String.valueOf(entry.getValue());
             String medal = rank == 1 ? "🥇" : rank == 2 ? "🥈" : rank == 3 ? "🥉" : rank + ".";
-            sb.append(medal).append(" ").append(mention).append(": **").append(entry.getValue()).append("** Tickets\n");
+            sb.append(medal).append(" ").append(mention).append(": **").append(ticketCount).append("** Tickets\n");
             rank++;
         }
         return sb.toString().trim();
@@ -322,10 +331,16 @@ public class RatingStatsScheduler {
         int count = 0;
         for (var entry : avgRatings.entrySet()) {
             if (count >= limit) break;
-            String mention = getUserMention(entry.getKey());
-            double avg = entry.getValue();
-            int ratings = countRatings.getOrDefault(entry.getKey(), 0);
-            sb.append(mention).append(": ").append(getStarDisplay(avg)).append(" (Ø ").append(String.format("%.2f", avg)).append(", ").append(ratings).append("x)\n");
+            String userId = entry.getKey();
+            boolean hideStats = supporterSettingsData.isHideStats(userId);
+            String mention = hideStats ? "Anonym" : getUserMention(userId);
+            if (hideStats) {
+                sb.append(mention).append(": ★★★★★ (Ø ???, ???x)\n");
+            } else {
+                double avg = entry.getValue();
+                int ratings = countRatings.getOrDefault(userId, 0);
+                sb.append(mention).append(": ").append(getStarDisplay(avg)).append(" (Ø ").append(String.format("%.2f", avg)).append(", ").append(ratings).append("x)\n");
+            }
             count++;
         }
         return sb.toString().trim();
@@ -336,11 +351,17 @@ public class RatingStatsScheduler {
         int rank = 1;
         for (var entry : avgRatings.entrySet()) {
             if (rank > limit) break;
-            String mention = getUserMention(entry.getKey());
-            double avg = entry.getValue();
-            int ratings = countRatings.getOrDefault(entry.getKey(), 0);
+            String userId = entry.getKey();
+            boolean hideStats = supporterSettingsData.isHideStats(userId);
+            String mention = hideStats ? "Anonym" : getUserMention(userId);
             String medal = rank == 1 ? "🥇" : rank == 2 ? "🥈" : rank == 3 ? "🥉" : rank + ".";
-            sb.append(medal).append(" ").append(mention).append(": ").append(getStarDisplay(avg)).append(" (Ø ").append(String.format("%.2f", avg)).append(", ").append(ratings).append("x)\n");
+            if (hideStats) {
+                sb.append(medal).append(" ").append(mention).append(": ★★★★★ (Ø ???, ???x)\n");
+            } else {
+                double avg = entry.getValue();
+                int ratings = countRatings.getOrDefault(userId, 0);
+                sb.append(medal).append(" ").append(mention).append(": ").append(getStarDisplay(avg)).append(" (Ø ").append(String.format("%.2f", avg)).append(", ").append(ratings).append("x)\n");
+            }
             rank++;
         }
         return sb.toString().trim();
