@@ -51,6 +51,12 @@ public class XpService {
             return;
         }
 
+        String supporterId = ticket.getSupporter().getId();
+        if (supporterId == null || supporterId.isBlank() || !supporterId.matches("\\d{17,20}")) {
+            log.warn("[XP] Invalid supporter ID '{}' for ticket #{}, skipping XP award", supporterId, ticket.getId());
+            return;
+        }
+
         if (ticket.getTextChannel() == null) {
             log.debug("[XP] No text channel for ticket #{}, skipping XP award", ticket.getId());
             return;
@@ -61,7 +67,7 @@ public class XpService {
             String ticketId = String.valueOf(ticket.getId());
             String category = ticket.getCategory() != null ? ticket.getCategory().getLabel() : "Unknown";
             String ownerId = ticket.getOwner() != null ? ticket.getOwner().getId() : null;
-            String supporterId = ticket.getSupporter().getId();
+            // supporterId already validated above
             String channelId = ticket.getTextChannel().getId();
 
             // Get initial reason from info map
