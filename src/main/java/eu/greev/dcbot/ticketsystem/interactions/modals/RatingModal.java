@@ -98,9 +98,6 @@ public class RatingModal implements Interaction {
 
         ratingData.saveRating(rating);
 
-        // Award XP to the supporter (async - sends full ticket data)
-        xpService.awardTicketXp(ticket, stars);
-
         String starDisplay = getStarDisplay(stars);
         EmbedBuilder confirmation = new EmbedBuilder()
                 .setColor(Color.GREEN)
@@ -110,7 +107,11 @@ public class RatingModal implements Interaction {
 
         event.replyEmbeds(confirmation.build()).setEphemeral(true).queue();
 
+        // Generate transcript first to get URL for XP notification
         String transcriptUrl = sendRatingNotification(ticket, stars, message);
+
+        // Award XP to the supporter with transcript URL (async - sends full ticket data)
+        xpService.awardTicketXp(ticket, stars, transcriptUrl);
 
         ticket.setPendingRating(false);
 
@@ -154,9 +155,8 @@ public class RatingModal implements Interaction {
                     var logChannel = jda.getTextChannelById(config.getLogChannel());
                     if (logChannel != null) {
                         var uploadMessage = logChannel.sendFiles(transcriptUpload).complete();
-                        if (!uploadMessage.getAttachments().isEmpty()) {
-                            transcriptUrl = uploadMessage.getAttachments().getFirst().getUrl();
-                        }
+                        // Use message jump URL instead of attachment URL for better Discord navigation
+                        transcriptUrl = uploadMessage.getJumpUrl();
                     }
                 } else {
                     log.warn("No messages found in ticket #{} channel, skipping transcript generation", ticket.getId());

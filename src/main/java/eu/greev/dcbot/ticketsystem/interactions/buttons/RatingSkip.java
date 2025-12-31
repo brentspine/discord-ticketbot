@@ -71,11 +71,11 @@ public class RatingSkip extends AbstractButton {
             return;
         }
 
-        // Award XP (async - sends full ticket data, no rating since skipped)
-        xpService.awardTicketXp(ticket, null);
-
-        // Send skip notification (with transcript but no rating)
+        // Generate transcript first to get URL for XP notification
         String transcriptUrl = sendSkipNotification(ticket);
+
+        // Award XP with transcript URL (async - sends full ticket data, no rating since skipped)
+        xpService.awardTicketXp(ticket, null, transcriptUrl);
 
         // Reset pending rating state
         ticket.setPendingRating(false);
@@ -117,9 +117,8 @@ public class RatingSkip extends AbstractButton {
                 var logChannel = jda.getTextChannelById(config.getLogChannel());
                 if (logChannel != null) {
                     var uploadMessage = logChannel.sendFiles(transcriptUpload).complete();
-                    if (!uploadMessage.getAttachments().isEmpty()) {
-                        transcriptUrl = uploadMessage.getAttachments().getFirst().getUrl();
-                    }
+                    // Use message jump URL instead of attachment URL for better Discord navigation
+                    transcriptUrl = uploadMessage.getJumpUrl();
                 }
             }
         } catch (Exception e) {

@@ -34,10 +34,11 @@ public class XpService {
      * This method collects ticket data and sends it to the API asynchronously.
      * No need to wait since we send the data directly (no channel fetch needed on backend).
      *
-     * @param ticket  The ticket being closed
-     * @param rating  The star rating given by the ticket owner (1-5), can be null if skipped
+     * @param ticket        The ticket being closed
+     * @param rating        The star rating given by the ticket owner (1-5), can be null if skipped
+     * @param transcriptUrl URL to the transcript in the log channel (for linking in notifications)
      */
-    public void awardTicketXp(Ticket ticket, Integer rating) {
+    public void awardTicketXp(Ticket ticket, Integer rating, String transcriptUrl) {
         if (config.getXpApiUrl() == null || config.getXpApiUrl().isBlank()) {
             log.debug("[XP] XP API not configured, skipping");
             return;
@@ -123,6 +124,9 @@ public class XpService {
             if (rating != null) {
                 body.put("rating", rating);
             }
+            if (transcriptUrl != null && !transcriptUrl.isBlank()) {
+                body.put("transcriptUrl", transcriptUrl);
+            }
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(config.getXpApiUrl() + "/tickets/award-xp"))
@@ -152,6 +156,17 @@ public class XpService {
         } catch (Exception e) {
             log.error("[XP] Error preparing XP request for ticket #{}: {}", ticket.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * Award XP to a helper for resolving a ticket (without transcript URL).
+     * This is a convenience overload for cases where no transcript is available.
+     *
+     * @param ticket  The ticket being closed
+     * @param rating  The star rating given by the ticket owner (1-5), can be null if skipped
+     */
+    public void awardTicketXp(Ticket ticket, Integer rating) {
+        awardTicketXp(ticket, rating, null);
     }
 
     /**
