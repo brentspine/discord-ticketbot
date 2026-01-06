@@ -11,6 +11,7 @@ public interface ICategory {
     String getDescription();
     Modal getModal();
     Map<String, String> getInfo(ModalInteractionEvent event);
+
     default String getModalTitle() {
         return "Ticket: " + getLabel();
     }

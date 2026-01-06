@@ -32,7 +32,13 @@ CREATE TABLE IF NOT EXISTS tickets
 
     closer                 VARCHAR DEFAULT "",
 
-    closedAt               BIGINT  DEFAULT NULL
+    closedAt               BIGINT  DEFAULT NULL,
+
+    pendingRatingSince     VARCHAR DEFAULT NULL NULL,
+
+    ratingRemindersSent    INTEGER DEFAULT 0    NOT NULL,
+
+    pendingCloser          VARCHAR DEFAULT ""   NOT NULL
 );
 CREATE TABLE IF NOT EXISTS messages
 (

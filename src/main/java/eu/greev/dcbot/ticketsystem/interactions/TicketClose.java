@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.events.Event;
@@ -146,20 +147,38 @@ public class TicketClose implements Interaction {
             return;
         }
 
+        // Check if owner is still in the guild before requesting rating
+        Guild guild = jda.getGuildById(config.getServerId());
+        if (guild != null && guild.getMember(ticket.getOwner()) == null) {
+            // Owner not in guild, close directly without rating
+            EmbedBuilder confirmation = new EmbedBuilder()
+                    .setColor(Color.GREEN)
+                    .setFooter(config.getServerName(), config.getServerLogo())
+                    .addField("Ticket closed", "The ticket owner is no longer in the server. Ticket closed without rating.", false);
+            event.getHook().sendMessageEmbeds(confirmation.build()).setEphemeral(true).queue();
+            ticketService.closeTicket(ticket, false, event.getMember(), "Closed without rating (member not in server)");
+            return;
+        }
+
         // Set pending rating state
-        ticket.setPendingRating(true);
         ticket.setPendingCloser(event.getUser());
         ticket.setPendingRatingSince(Instant.now());
         ticket.setRatingRemindersSent(0);
 
-        // Move ticket to pending rating category (if configured)
-        if (config.getPendingRatingCategory() != 0) {
-            Category pendingCategory = jda.getCategoryById(config.getPendingRatingCategory());
-            if (pendingCategory != null) {
-                ticket.getTextChannel().getManager()
-                        .setParent(pendingCategory)
-                        .queue();
-            }
+        if (ticket.isWaiting()) {
+            ticket.setWaiting(false);
+            ticket.setWaitingSince(null);
+            ticket.setRemindersSent(0);
+            // Update channel name to remove waiting emoji
+            ticketService.toggleWaiting(ticket, false);
+        }
+
+        // Move ticket to pending rating category
+        Category pendingCategory = ticketService.getAvailablePendingRatingCategory();
+        if (pendingCategory != null) {
+            ticket.getTextChannel().getManager()
+                    .setParent(pendingCategory)
+                    .queue();
         }
 
         // Remove supporter from ticket (can't see it anymore)

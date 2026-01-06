@@ -113,7 +113,7 @@ public class RatingModal implements Interaction {
         // Award XP to the supporter with transcript URL (async - sends full ticket data)
         xpService.awardTicketXp(ticket, stars, transcriptUrl);
 
-        ticket.setPendingRating(false);
+        ticket.setPendingRatingSince(null);
 
         Member pendingCloser = null;
         if (ticket.getPendingCloser() != null) {

@@ -39,7 +39,6 @@ public class Ticket {
     @Getter private ThreadChannel threadChannel;
     @Getter private boolean isOpen;
     @Getter private Long closedAt;
-    @Getter private boolean pendingRating;
     @Getter private User pendingCloser;
     @Getter private Instant pendingRatingSince;
     @Getter private int ratingRemindersSent;
@@ -149,23 +148,28 @@ public class Ticket {
         EXECUTOR.execute(() -> ticketData.saveTicket(this));
     }
 
-    public Ticket setPendingRating(boolean pendingRating) {
-        this.pendingRating = pendingRating;
-        return this;
+    /**
+     * Checks if the ticket is pending rating by checking if pendingRatingSince is not null.
+     */
+    public boolean isPendingRating() {
+        return pendingRatingSince != null;
     }
 
     public Ticket setPendingCloser(User pendingCloser) {
         this.pendingCloser = pendingCloser;
+        this.save();
         return this;
     }
 
     public Ticket setPendingRatingSince(Instant pendingRatingSince) {
         this.pendingRatingSince = pendingRatingSince;
+        this.save();
         return this;
     }
 
     public Ticket setRatingRemindersSent(int ratingRemindersSent) {
         this.ratingRemindersSent = ratingRemindersSent;
+        this.save();
         return this;
     }
 }

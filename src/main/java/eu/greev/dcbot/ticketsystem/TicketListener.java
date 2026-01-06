@@ -76,7 +76,7 @@ public class TicketListener extends ListenerAdapter {
             if (ticket.isPendingRating()) {
                 // Award XP (async - sends full ticket data, no rating since member left)
                 xpService.awardTicketXp(ticket, null);
-                ticket.setPendingRating(false);
+                ticket.setPendingRatingSince(null);
                 ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Closed without rating (member left the server)");
             }
         }

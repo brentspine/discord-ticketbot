@@ -300,6 +300,14 @@ public class TicketService {
                                 .bind(0, parentCategory.getId())
                                 .execute()
                 );
+            } else if (Main.OVERFLOW_PENDING_RATING_CATEGORIES.contains(parentCategory)) {
+                Main.OVERFLOW_PENDING_RATING_CATEGORIES.remove(parentCategory);
+                parentCategory.delete().queue();
+                jdbi.useHandle(handle ->
+                        handle.createUpdate("DELETE FROM overflow_categories WHERE categoryID = ?")
+                                .bind(0, parentCategory.getId())
+                                .execute()
+                );
             }
         }
 
@@ -403,6 +411,8 @@ public class TicketService {
         };
     }
 
+    public static final String PENDING_RATING_OVERFLOW_KEY = "pending-rating";
+
     public void loadOverflowCategories() {
         Guild guild = jda.getGuildById(config.getServerId());
 
@@ -416,6 +426,8 @@ public class TicketService {
                     if (category != null) {
                         if (ticketCategoryId == null) {
                             Main.OVERFLOW_UNCLAIMED_CHANNEL_CATEGORIES.add(category);
+                        } else if (PENDING_RATING_OVERFLOW_KEY.equals(ticketCategoryId)) {
+                            Main.OVERFLOW_PENDING_RATING_CATEGORIES.add(category);
                         } else {
                             Main.CATEGORIES.stream()
                                     .filter(cat -> cat.getId().equals(ticketCategoryId))
@@ -453,6 +465,57 @@ public class TicketService {
         );
 
         return newCategory;
+    }
+
+    /**
+     * Creates a new overflow category for pending rating tickets.
+     */
+    public Category createPendingRatingOverflowCategory(Category defaultCategory) {
+        Guild guild = jda.getGuildById(config.getServerId());
+        List<Category> dynamicCategories = Main.OVERFLOW_PENDING_RATING_CATEGORIES;
+        Category newCategory = guild.createCategory(defaultCategory.getName() + " (Overflow)").complete();
+
+        guild.modifyCategoryPositions()
+                .selectPosition(newCategory)
+                .moveBelow(dynamicCategories.isEmpty() ? defaultCategory : dynamicCategories.getLast())
+                .queue();
+
+        dynamicCategories.add(newCategory);
+
+        jdbi.withHandle(handle ->
+                handle.createUpdate("INSERT INTO overflow_categories (categoryID, ticketCategory) VALUES (?, ?)")
+                        .bind(0, newCategory.getId())
+                        .bind(1, PENDING_RATING_OVERFLOW_KEY)
+                        .execute()
+        );
+
+        return newCategory;
+    }
+
+    /**
+     * Gets an available pending rating category (main or overflow).
+     * Creates overflow if needed.
+     */
+    public Category getAvailablePendingRatingCategory() {
+        if (config.getPendingRatingCategory() == 0) {
+            return null;
+        }
+
+        Category defaultCategory = jda.getCategoryById(config.getPendingRatingCategory());
+        if (defaultCategory == null) {
+            return null;
+        }
+
+        List<Category> dynamicCategories = Main.OVERFLOW_PENDING_RATING_CATEGORIES;
+
+        if (defaultCategory.getChannels().size() < 50) {
+            return defaultCategory;
+        }
+
+        return dynamicCategories.stream()
+                .filter(c -> c.getChannels().size() < 50)
+                .findFirst()
+                .orElseGet(() -> createPendingRatingOverflowCategory(defaultCategory));
     }
 
     public void toggleWaiting(Ticket ticket, boolean waiting) {
@@ -624,6 +687,17 @@ public class TicketService {
 
             consolidateChannels(unclaimedOverflow, mainUnclaimedCategory, null);
         }
+
+        // Consolidate pending rating categories
+        if (config.getPendingRatingCategory() != 0) {
+            Category mainPendingRatingCategory = jda.getCategoryById(config.getPendingRatingCategory());
+            if (mainPendingRatingCategory != null) {
+                List<Category> pendingRatingOverflow = new ArrayList<>(Main.OVERFLOW_PENDING_RATING_CATEGORIES);
+                pendingRatingOverflow.addFirst(mainPendingRatingCategory);
+
+                consolidatePendingRatingChannels(pendingRatingOverflow, mainPendingRatingCategory);
+            }
+        }
     }
 
     public void consolidateChannels(List<Category> categories, Category mainCategory, ICategory ticketCategory) {
@@ -674,6 +748,55 @@ public class TicketService {
             } else {
                 Main.OVERFLOW_UNCLAIMED_CHANNEL_CATEGORIES.remove(category);
             }
+
+            jdbi.useHandle(handle ->
+                    handle.createUpdate("DELETE FROM overflow_categories WHERE categoryID = ?")
+                            .bind(0, category.getId())
+                            .execute()
+            );
+
+            category.delete().queue();
+        }
+    }
+
+    /**
+     * Consolidates pending rating categories, similar to consolidateChannels but for pending rating.
+     */
+    private void consolidatePendingRatingChannels(List<Category> categories, Category mainCategory) {
+        if (mainCategory == null) {
+            return;
+        }
+
+        List<TextChannel> allChannels = categories.stream()
+                .flatMap(c -> c.getTextChannels().stream())
+                .toList();
+
+        int channelsCount = allChannels.size();
+        int categoriesNeeded = Math.max(1, (channelsCount + 49) / 50);
+
+        List<Category> categoriesToKeep = categories.stream()
+                .limit(categoriesNeeded)
+                .toList();
+
+        int channelIndex = 0;
+        for (Category targetCategory : categoriesToKeep) {
+            int channelsForThisCategory = Math.min(50, allChannels.size() - channelIndex);
+
+            for (int i = 0; i < channelsForThisCategory; i++) {
+                TextChannel channel = allChannels.get(channelIndex++);
+                if (!channel.getParentCategory().equals(targetCategory)) {
+                    channel.getManager().setParent(targetCategory).queue();
+                }
+            }
+        }
+
+        List<Category> categoriesToDelete = categories.stream()
+                .skip(categoriesNeeded)
+                .filter(c -> !c.equals(mainCategory))
+                .toList();
+
+        for (Category category : categoriesToDelete) {
+            Main.OVERFLOW_PENDING_RATING_CATEGORIES.remove(category);
 
             jdbi.useHandle(handle ->
                     handle.createUpdate("DELETE FROM overflow_categories WHERE categoryID = ?")

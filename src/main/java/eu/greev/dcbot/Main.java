@@ -55,6 +55,7 @@ public class Main {
     public static final List<ICategory> CATEGORIES = new ArrayList<>();
     public static final Map<ICategory, List<Category>> OVERFLOW_CHANNEL_CATEGORIES = new HashMap<>();
     public static final List<Category> OVERFLOW_UNCLAIMED_CHANNEL_CATEGORIES = new ArrayList<>();
+    public static final List<Category> OVERFLOW_PENDING_RATING_CATEGORIES = new ArrayList<>();
     @Getter
     private static String createCommandId;
     @Getter
@@ -233,6 +234,26 @@ public class Main {
         try {
             jdbi.withHandle(h -> h.createUpdate("ALTER TABLE tickets ADD COLUMN closedAt BIGINT DEFAULT NULL").execute());
             log.info("Added closedAt column to tickets table");
+        } catch (Exception e) {
+            // Column already exists, ignore
+        }
+
+        // Migration: Add pending rating columns if they don't exist
+        try {
+            jdbi.withHandle(h -> h.createUpdate("ALTER TABLE tickets ADD COLUMN pendingRatingSince VARCHAR DEFAULT NULL").execute());
+            log.info("Added pendingRatingSince column to tickets table");
+        } catch (Exception e) {
+            // Column already exists, ignore
+        }
+        try {
+            jdbi.withHandle(h -> h.createUpdate("ALTER TABLE tickets ADD COLUMN ratingRemindersSent INTEGER DEFAULT 0 NOT NULL").execute());
+            log.info("Added ratingRemindersSent column to tickets table");
+        } catch (Exception e) {
+            // Column already exists, ignore
+        }
+        try {
+            jdbi.withHandle(h -> h.createUpdate("ALTER TABLE tickets ADD COLUMN pendingCloser VARCHAR DEFAULT '' NOT NULL").execute());
+            log.info("Added pendingCloser column to tickets table");
         } catch (Exception e) {
             // Column already exists, ignore
         }

@@ -78,6 +78,7 @@ public class HourlyScheduler {
                             .isBefore(Instant.now());
 
             boolean shouldRemindSupporter = !ticket.isWaiting() &&
+                    !ticket.isPendingRating() &&
                     ticket.getSupporter() != null &&
                     ticket.getTextChannel() != null &&
                     !ticket.getTextChannel().getLatestMessageId().equals("0") &&
@@ -94,9 +95,9 @@ public class HourlyScheduler {
                         .setTitle(String.format("⏰ Reminder: Waiting for your response (%s/%s)", ticket.getRemindersSent() + 1, AUTO_CLOSE_HOURS / REMIND_INTERVAL_HOURS - 1))
                         .setColor(Color.decode(config.getColor()))
                         .appendDescription("**Our support team is waiting for you to respond in %s**".formatted(ticket.getTextChannel()))
-                        .appendDescription(String.format("\nIf you do not respond, the ticket will be automatically closed <t:%d:R>.",
+                        .appendDescription(String.format("%nIf you do not respond, the ticket will be automatically closed <t:%d:R>.",
                                 ticket.getWaitingSince()
-                                        .plus(Duration.ofHours(AUTO_CLOSE_HOURS + 1))
+                                        .plus(Duration.ofHours(AUTO_CLOSE_HOURS + 1L))
                                         .atZone(ZoneId.of("UTC"))
                                         .withMinute(0)
                                         .toInstant()
@@ -132,28 +133,30 @@ public class HourlyScheduler {
                 supporterReminders++;
             }
 
-            // Rating reminder logic
             if (ticket.isPendingRating() && ticket.getPendingRatingSince() != null) {
-                int maxReminders = config.getRatingMaxReminders();
-                int intervalHours = config.getRatingReminderIntervalHours();
-
-                boolean shouldAutoCloseRating = ticket.getRatingRemindersSent() >= maxReminders;
-                boolean shouldRemindRating = !shouldAutoCloseRating &&
+                // Send one reminder after 24 hours if none sent yet
+                boolean shouldRemindRating = ticket.getRatingRemindersSent() == 0 &&
                         ticket.getPendingRatingSince()
-                                .plus((long) intervalHours * (ticket.getRatingRemindersSent() + 1), ChronoUnit.HOURS)
+                                .plus(24, ChronoUnit.HOURS)
+                                .isBefore(Instant.now());
+
+                // Auto-close 48 hours after reminder was sent (72 hours total from pending start)
+                boolean shouldAutoCloseRating = ticket.getRatingRemindersSent() >= 1 &&
+                        ticket.getPendingRatingSince()
+                                .plus(72, ChronoUnit.HOURS)
                                 .isBefore(Instant.now());
 
                 if (shouldAutoCloseRating) {
                     // Award XP (async - sends full ticket data, no rating since auto-closed)
                     xpService.awardTicketXp(ticket, null);
-                    ticket.setPendingRating(false);
+                    ticket.setPendingRatingSince(null);
                     ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Closed without rating (no response)");
                     ratingAutoClosures++;
                 } else if (shouldRemindRating) {
                     EmbedBuilder reminderEmbed = new EmbedBuilder()
                             .setColor(Color.ORANGE)
-                            .setTitle(String.format("⏰ Rating Reminder (%d/%d)", ticket.getRatingRemindersSent() + 1, maxReminders))
-                            .setDescription(ticket.getOwner().getAsMention() + ", please rate your support experience!\nThe ticket will be closed automatically if you don't respond.")
+                            .setTitle("⏰ Rating Reminder")
+                            .setDescription(ticket.getOwner().getAsMention() + ", please rate your support experience!\nThe ticket will be closed automatically in 48 hours if you don't respond.")
                             .setFooter(config.getServerName(), config.getServerLogo());
 
                     ticket.getTextChannel().sendMessage(ticket.getOwner().getAsMention())

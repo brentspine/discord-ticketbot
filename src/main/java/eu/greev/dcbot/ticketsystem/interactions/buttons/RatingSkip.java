@@ -78,7 +78,7 @@ public class RatingSkip extends AbstractButton {
         xpService.awardTicketXp(ticket, null, transcriptUrl);
 
         // Reset pending rating state
-        ticket.setPendingRating(false);
+        ticket.setPendingRatingSince(null);
 
         // Send confirmation
         EmbedBuilder confirmation = new EmbedBuilder()
