@@ -32,7 +32,13 @@ CREATE TABLE IF NOT EXISTS tickets
 
     closer                 VARCHAR DEFAULT "",
 
-    closedAt               BIGINT  DEFAULT NULL
+    closedAt               BIGINT  DEFAULT NULL,
+
+    pendingRatingSince     VARCHAR DEFAULT NULL NULL,
+
+    ratingRemindersSent    INTEGER DEFAULT 0    NOT NULL,
+
+    pendingCloser          VARCHAR DEFAULT ""   NOT NULL
 );
 CREATE TABLE IF NOT EXISTS messages
 (
@@ -92,4 +98,14 @@ CREATE TABLE IF NOT EXISTS ratings
     createdAt   BIGINT              NOT NULL,
 
     FOREIGN KEY (ticketID) REFERENCES tickets (ticketID)
+);
+CREATE TABLE IF NOT EXISTS supporter_settings
+(
+    discordId VARCHAR PRIMARY KEY NOT NULL,
+
+    hideStats BOOL DEFAULT 0      NOT NULL,
+
+    createdAt BIGINT              NOT NULL,
+
+    updatedAt BIGINT              NOT NULL
 );

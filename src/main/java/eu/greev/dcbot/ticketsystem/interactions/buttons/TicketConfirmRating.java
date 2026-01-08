@@ -46,7 +46,6 @@ public class TicketConfirmRating extends AbstractButton {
             return;
         }
 
-        ticket.setPendingRating(true);
         ticket.setPendingCloser(event.getUser());
         ticket.setPendingRatingSince(java.time.Instant.now());
         ticket.setRatingRemindersSent(0);

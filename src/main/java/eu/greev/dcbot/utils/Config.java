@@ -39,6 +39,10 @@ public class Config {
     private Map<String, Long> categories = new HashMap<>();
     private Map<String, List<Long>> categoryRoles = new HashMap<>();
 
+    // XP System Integration
+    private String xpApiUrl = "";
+    private String xpApiKey = "";
+
     public void dumpConfig(String path) {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);

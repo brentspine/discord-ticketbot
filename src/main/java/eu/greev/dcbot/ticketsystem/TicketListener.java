@@ -5,6 +5,7 @@ import eu.greev.dcbot.ticketsystem.categories.ICategory;
 import eu.greev.dcbot.ticketsystem.entities.Ticket;
 import eu.greev.dcbot.ticketsystem.interactions.TicketClose;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
+import eu.greev.dcbot.ticketsystem.service.XpService;
 import eu.greev.dcbot.utils.Config;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,7 @@ public class TicketListener extends ListenerAdapter {
     private final TicketService ticketService;
     private final Config config;
     private final JDA jda;
+    private final XpService xpService;
 
     @Override
     public void onChannelUpdateArchived(ChannelUpdateArchivedEvent event) {
@@ -72,7 +74,9 @@ public class TicketListener extends ListenerAdapter {
             ticket.getTextChannel().sendMessage(messageBuilder.build()).queue();
 
             if (ticket.isPendingRating()) {
-                ticket.setPendingRating(false);
+                // Award XP (async - sends full ticket data, no rating since member left)
+                xpService.awardTicketXp(ticket, null);
+                ticket.setPendingRatingSince(null);
                 ticketService.closeTicket(ticket, false, jda.getGuildById(config.getServerId()).getSelfMember(), "Closed without rating (member left the server)");
             }
         }

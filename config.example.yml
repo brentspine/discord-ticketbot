@@ -70,3 +70,9 @@ categoryRoles:
     - 123456789012345678
   security:
     - 123456789012345678
+
+# XP System Integration (optional - leave empty to disable)
+# Backend API URL for awarding XP to helpers
+xpApiUrl: ""
+# API key for authentication
+xpApiKey: ""

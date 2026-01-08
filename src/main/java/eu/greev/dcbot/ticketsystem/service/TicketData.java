@@ -75,6 +75,17 @@ public class TicketData {
                         ticketBuilder.closedAt(closedAt);
                     }
 
+                    // Load pending rating fields
+                    ticketBuilder.ratingRemindersSent(resultSet.getInt("ratingRemindersSent"));
+                    String pendingRatingSince = resultSet.getString("pendingRatingSince");
+                    if (pendingRatingSince != null) {
+                        ticketBuilder.pendingRatingSince(Instant.parse(pendingRatingSince));
+                    }
+                    String pendingCloserId = resultSet.getString("pendingCloser");
+                    if (pendingCloserId != null && !pendingCloserId.equals(Strings.EMPTY)) {
+                        ticketBuilder.pendingCloser(jda.retrieveUserById(pendingCloserId).complete());
+                    }
+
                     return ticketBuilder;
                 })
                 .findFirst()).orElse(null);
@@ -131,7 +142,7 @@ public class TicketData {
             return jdbi.withHandle(handle -> {
                 // If no ticketID (0), INSERT and return generated key; otherwise UPDATE and return existing id
                 if (ticket.getId() == 0) {
-                    var update = handle.createUpdate("INSERT INTO tickets (channelID, threadID, category, info, isWaiting, owner, supporter, involved, baseMessage, isOpen, waitingSince, remindersSent, supporterRemindersSent, closeMessage, closer, closedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                    var update = handle.createUpdate("INSERT INTO tickets (channelID, threadID, category, info, isWaiting, owner, supporter, involved, baseMessage, isOpen, waitingSince, remindersSent, supporterRemindersSent, closeMessage, closer, closedAt, pendingRatingSince, ratingRemindersSent, pendingCloser) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
                     update
                             .bind(0, ticket.getTextChannel() != null ? ticket.getTextChannel().getId() : "")
                             .bind(1, ticket.getThreadChannel() != null ? ticket.getThreadChannel().getId() : "")
@@ -148,10 +159,13 @@ public class TicketData {
                             .bind(12, ticket.getSupporterRemindersSent())
                             .bind(13, ticket.getCloseMessage())
                             .bind(14, ticket.getCloser() != null ? ticket.getCloser().getId() : "")
-                            .bind(15, ticket.getClosedAt());
+                            .bind(15, ticket.getClosedAt())
+                            .bind(16, ticket.getPendingRatingSince() == null ? null : ticket.getPendingRatingSince().toString())
+                            .bind(17, ticket.getRatingRemindersSent())
+                            .bind(18, ticket.getPendingCloser() != null ? ticket.getPendingCloser().getId() : "");
                     return update.executeAndReturnGeneratedKeys("ticketID").mapTo(Integer.class).one();
                 } else {
-                    handle.createUpdate("UPDATE tickets SET channelID=?, threadID=?, category=?, info=?, isWaiting=?, owner=?, supporter=?, involved=?, baseMessage=?, isOpen=?, waitingSince=?, remindersSent=?, supporterRemindersSent=?, closeMessage=?, closer=?, closedAt=? WHERE ticketID =?")
+                    handle.createUpdate("UPDATE tickets SET channelID=?, threadID=?, category=?, info=?, isWaiting=?, owner=?, supporter=?, involved=?, baseMessage=?, isOpen=?, waitingSince=?, remindersSent=?, supporterRemindersSent=?, closeMessage=?, closer=?, closedAt=?, pendingRatingSince=?, ratingRemindersSent=?, pendingCloser=? WHERE ticketID =?")
                             .bind(0, ticket.getTextChannel() != null ? ticket.getTextChannel().getId() : "")
                             .bind(1, ticket.getThreadChannel() != null ? ticket.getThreadChannel().getId() : "")
                             .bind(2, ticket.getCategory().getId())
@@ -168,7 +182,10 @@ public class TicketData {
                             .bind(13, ticket.getCloseMessage())
                             .bind(14, ticket.getCloser() != null ? ticket.getCloser().getId() : "")
                             .bind(15, ticket.getClosedAt())
-                            .bind(16, ticket.getId())
+                            .bind(16, ticket.getPendingRatingSince() == null ? null : ticket.getPendingRatingSince().toString())
+                            .bind(17, ticket.getRatingRemindersSent())
+                            .bind(18, ticket.getPendingCloser() != null ? ticket.getPendingCloser().getId() : "")
+                            .bind(19, ticket.getId())
                             .execute();
                     return ticket.getId();
                 }

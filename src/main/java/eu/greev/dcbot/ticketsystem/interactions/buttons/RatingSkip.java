@@ -1,9 +1,10 @@
 package eu.greev.dcbot.ticketsystem.interactions.buttons;
 
 import eu.greev.dcbot.ticketsystem.entities.Ticket;
+import eu.greev.dcbot.ticketsystem.service.SupporterSettingsData;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
+import eu.greev.dcbot.ticketsystem.service.XpService;
 import eu.greev.dcbot.utils.Config;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.ryzeon.transcripts.DiscordHtmlTranscripts;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -16,11 +17,20 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import java.awt.*;
 
 @Slf4j
-@AllArgsConstructor
 public class RatingSkip extends AbstractButton {
     private final TicketService ticketService;
     private final Config config;
     private final JDA jda;
+    private final XpService xpService;
+    private final SupporterSettingsData supporterSettingsData;
+
+    public RatingSkip(TicketService ticketService, Config config, JDA jda, XpService xpService, SupporterSettingsData supporterSettingsData) {
+        this.ticketService = ticketService;
+        this.config = config;
+        this.jda = jda;
+        this.xpService = xpService;
+        this.supporterSettingsData = supporterSettingsData;
+    }
 
     @Override
     public void execute(Event evt) {
@@ -61,11 +71,14 @@ public class RatingSkip extends AbstractButton {
             return;
         }
 
-        // Send skip notification (with transcript but no rating)
+        // Generate transcript first to get URL for XP notification
         String transcriptUrl = sendSkipNotification(ticket);
 
+        // Award XP with transcript URL (async - sends full ticket data, no rating since skipped)
+        xpService.awardTicketXp(ticket, null, transcriptUrl);
+
         // Reset pending rating state
-        ticket.setPendingRating(false);
+        ticket.setPendingRatingSince(null);
 
         // Send confirmation
         EmbedBuilder confirmation = new EmbedBuilder()
@@ -104,9 +117,8 @@ public class RatingSkip extends AbstractButton {
                 var logChannel = jda.getTextChannelById(config.getLogChannel());
                 if (logChannel != null) {
                     var uploadMessage = logChannel.sendFiles(transcriptUpload).complete();
-                    if (!uploadMessage.getAttachments().isEmpty()) {
-                        transcriptUrl = uploadMessage.getAttachments().getFirst().getUrl();
-                    }
+                    // Use message jump URL instead of attachment URL for better Discord navigation
+                    transcriptUrl = uploadMessage.getJumpUrl();
                 }
             }
         } catch (Exception e) {
@@ -117,12 +129,20 @@ public class RatingSkip extends AbstractButton {
             return transcriptUrl;
         }
 
+        // Check privacy setting for supporter
+        boolean hideStats = supporterSettingsData.isHideStats(ticket.getSupporter().getId());
+        String displayName = hideStats ? "Anonym" : ticket.getSupporter().getAsMention();
+        String thumbnailUrl = hideStats ? null : ticket.getSupporter().getEffectiveAvatarUrl();
+
         EmbedBuilder notification = new EmbedBuilder()
                 .setColor(Color.GRAY)
                 .setTitle("Ticket #" + ticket.getId() + " closed")
-                .setDescription(ticket.getSupporter().getAsMention() + " hat ein Ticket gelöst! *(Keine Bewertung)*")
-                .setThumbnail(ticket.getSupporter().getEffectiveAvatarUrl())
+                .setDescription(displayName + " hat ein Ticket gelöst! *(Keine Bewertung)*")
                 .setFooter(config.getServerName(), config.getServerLogo());
+
+        if (thumbnailUrl != null) {
+            notification.setThumbnail(thumbnailUrl);
+        }
 
         // Only add transcript link for non-sensitive categories
         if (transcriptUrl != null && !ticket.getCategory().isSensitive()) {
