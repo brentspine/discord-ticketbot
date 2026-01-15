@@ -49,14 +49,14 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("squid:S1192")
+@SuppressWarnings({"squid:S1192", "squid:S2386"})
 @Slf4j
 public class Main {
-    protected static final Map<String, Interaction> INTERACTIONS = new HashMap<>();
-    protected static final List<ICategory> CATEGORIES = new ArrayList<>();
-    protected static final Map<ICategory, List<Category>> OVERFLOW_CHANNEL_CATEGORIES = new HashMap<>();
-    protected static final List<Category> OVERFLOW_UNCLAIMED_CHANNEL_CATEGORIES = new ArrayList<>();
-    protected static final List<Category> OVERFLOW_PENDING_RATING_CATEGORIES = new ArrayList<>();
+    public static final Map<String, Interaction> INTERACTIONS = new HashMap<>();
+    public static final List<ICategory> CATEGORIES = new ArrayList<>();
+    public static final Map<ICategory, List<Category>> OVERFLOW_CHANNEL_CATEGORIES = new HashMap<>();
+    public static final List<Category> OVERFLOW_UNCLAIMED_CHANNEL_CATEGORIES = new ArrayList<>();
+    public static final List<Category> OVERFLOW_PENDING_RATING_CATEGORIES = new ArrayList<>();
     @Getter
     private static String createCommandId;
     @Getter
