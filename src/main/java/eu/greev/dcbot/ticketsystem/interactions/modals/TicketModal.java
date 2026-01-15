@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@SuppressWarnings({"squid:S5665"})
 @AllArgsConstructor
 public class TicketModal implements Interaction {
     private final ICategory category;

@@ -11,7 +11,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import java.awt.*;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class RatingStats extends AbstractCommand {
     private final RatingData ratingData;
@@ -108,7 +107,7 @@ public class RatingStats extends AbstractCommand {
 
     private String getStarDisplay(double avg) {
         int fullStars = (int) Math.round(avg);
-        fullStars = Math.max(0, Math.min(5, fullStars));
+        fullStars = Math.clamp(fullStars, 0, 5);
         return "\u2605".repeat(fullStars) + "\u2606".repeat(5 - fullStars);
     }
 }

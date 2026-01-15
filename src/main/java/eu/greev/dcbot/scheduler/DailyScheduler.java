@@ -20,7 +20,7 @@ public class DailyScheduler {
     private TicketService ticketService;
 
     public void start() {
-        scheduler.scheduleAtFixedRate(this::run, getInitialDelay(), 24 * 60 * 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::run, getInitialDelay(), 24 * 60 * 60L, TimeUnit.SECONDS);
     }
 
     private int getInitialDelay() {

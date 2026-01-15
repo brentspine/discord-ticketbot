@@ -42,11 +42,11 @@ public class RatingStatsScheduler {
     }
 
     public void start() {
-        scheduler.scheduleAtFixedRate(this::sendDailyReport, getInitialDelayForHour(9), 24 * 60 * 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::sendDailyReport, getInitialDelayForHour(9), 24 * 60 * 60L, TimeUnit.SECONDS);
 
-        scheduler.scheduleAtFixedRate(this::sendWeeklyReport, getInitialDelayForWeekly(), 7 * 24 * 60 * 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::sendWeeklyReport, getInitialDelayForWeekly(), 7 * 24 * 60 * 60L, TimeUnit.SECONDS);
 
-        scheduler.scheduleAtFixedRate(this::sendMonthlyReport, getInitialDelayForMonthly(), 30 * 24 * 60 * 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::sendMonthlyReport, getInitialDelayForMonthly(), 30 * 24 * 60 * 60L, TimeUnit.SECONDS);
 
         log.info("RatingStatsScheduler started - Daily reports at 9:00, Weekly reports on Monday 9:00, Monthly reports on 1st at 9:00");
     }
@@ -379,7 +379,7 @@ public class RatingStatsScheduler {
 
     private String getStarDisplay(double avg) {
         int fullStars = (int) Math.round(avg);
-        fullStars = Math.max(0, Math.min(5, fullStars));
+        fullStars = Math.clamp(fullStars, 0, 5);
         return "★".repeat(fullStars) + "☆".repeat(5 - fullStars);
     }
 }
