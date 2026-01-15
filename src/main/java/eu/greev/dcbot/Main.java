@@ -49,13 +49,14 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("squid:S1192")
 @Slf4j
 public class Main {
-    public static final Map<String, Interaction> INTERACTIONS = new HashMap<>();
-    public static final List<ICategory> CATEGORIES = new ArrayList<>();
-    public static final Map<ICategory, List<Category>> OVERFLOW_CHANNEL_CATEGORIES = new HashMap<>();
-    public static final List<Category> OVERFLOW_UNCLAIMED_CHANNEL_CATEGORIES = new ArrayList<>();
-    public static final List<Category> OVERFLOW_PENDING_RATING_CATEGORIES = new ArrayList<>();
+    protected static final Map<String, Interaction> INTERACTIONS = new HashMap<>();
+    protected static final List<ICategory> CATEGORIES = new ArrayList<>();
+    protected static final Map<ICategory, List<Category>> OVERFLOW_CHANNEL_CATEGORIES = new HashMap<>();
+    protected static final List<Category> OVERFLOW_UNCLAIMED_CHANNEL_CATEGORIES = new ArrayList<>();
+    protected static final List<Category> OVERFLOW_PENDING_RATING_CATEGORIES = new ArrayList<>();
     @Getter
     private static String createCommandId;
     @Getter
@@ -153,7 +154,7 @@ public class Main {
                         .addOption(OptionType.STRING, "type", "Report type: daily, weekly, monthly", true))
                 .addSubcommands(new SubcommandData("set-privacy", "Toggle ob deine XP/Ratings öffentlich angezeigt werden")
                         .addOption(OptionType.STRING, "mode", "visible oder hidden", true))
-        ).queue(s -> s.get(0).getSubcommands().forEach(c -> {
+        ).queue(s -> s.getFirst().getSubcommands().forEach(c -> {
                     if (c.getName().equals("get-tickets")) {
                         getTicketCommandId = c.getId();
                     } else if (c.getName().equals("create")) {
