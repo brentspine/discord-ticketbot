@@ -147,8 +147,8 @@ public class RatingModal implements Interaction {
         String starDisplay = getStarDisplay(stars);
         Color embedColor = getRatingColor(stars);
 
-        // Generate HTML transcript and upload to log channel to get URL
-        String transcriptUrl = ticketService.generateTranscript(ticket);
+        // Generate transcript (will return null for sensitive categories)
+        String transcriptUrl = ticketService.sendTranscript(ticket);
 
         if (config.getRatingNotificationChannels() == null || config.getRatingNotificationChannels().isEmpty()) {
             return transcriptUrl;

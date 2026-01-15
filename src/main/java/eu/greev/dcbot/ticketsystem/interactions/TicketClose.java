@@ -219,7 +219,7 @@ public class TicketClose implements Interaction {
                                     Button.success("rating-5-" + ticket.getId(), "⭐⭐⭐⭐⭐")
                             )
                             .addActionRow(
-                                    Button.danger("rating-skip-" + ticket.getId(), "Nein danke")
+                                    Button.danger("rating-skip-" + ticket.getId(), "No thanks")
                             ))
                     .queue(
                             success -> {
