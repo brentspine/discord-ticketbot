@@ -220,35 +220,9 @@ public class TicketService {
         transcript.addLogMessage("[%s] closed the ticket%s".formatted(closer.getUser().getName(), message == null ? "." : " with following message: " + message), Instant.now().getEpochSecond(), ticketId);
 
         // Use existing transcript URL if provided, otherwise generate new one
-        String transcriptUrl = existingTranscriptUrl;
-        if (transcriptUrl == null) {
-            try {
-                if (ticket.getTextChannel() != null && config.getLogChannel() != 0) {
-                    // Fetch messages first to avoid NPE in library when handling message references
-                    var messages = ticket.getTextChannel().getIterableHistory()
-                            .takeAsync(1000)
-                            .get();
-
-                    if (messages != null && !messages.isEmpty()) {
-                        FileUpload htmlTranscriptUpload = DiscordHtmlTranscripts.getInstance()
-                                .createTranscript(ticket.getTextChannel(), "transcript-" + ticketId + ".html");
-
-                        var logChannel = jda.getGuildById(config.getServerId()).getTextChannelById(config.getLogChannel());
-                        if (logChannel != null) {
-                            var uploadMessage = logChannel.sendFiles(htmlTranscriptUpload).complete();
-                            if (!uploadMessage.getAttachments().isEmpty()) {
-                                transcriptUrl = uploadMessage.getAttachments().getFirst().getUrl();
-                            }
-                        }
-                    } else {
-                        log.warn("No messages found in ticket #{} channel, skipping transcript generation", ticketId);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Failed to generate/upload HTML transcript for ticket #{}: {}", ticketId, e.getMessage());
-                // Continue without transcript - don't let this block ticket closure
-            }
-        }
+        String transcriptUrl = existingTranscriptUrl == null
+                ? generateTranscript(ticket)
+                : existingTranscriptUrl;
 
         EmbedBuilder builder = new EmbedBuilder().setTitle("Ticket " + ticketId)
                 .addField("Closed by", closer.getAsMention(), false);
@@ -805,6 +779,55 @@ public class TicketService {
             );
 
             category.delete().queue();
+        }
+    }
+
+    public String generateTranscript(Ticket ticket) {
+        String transcriptUrl = null;
+        int ticketId = ticket.getId();
+        try {
+            if (ticket.getTextChannel() != null && config.getLogChannel() != 0) {
+                // Fetch messages first to avoid NPE in library when handling message references
+                var messages = ticket.getTextChannel().getIterableHistory()
+                        .takeAsync(1000)
+                        .get();
+
+                if (messages != null && !messages.isEmpty()) {
+                    FileUpload htmlTranscriptUpload = DiscordHtmlTranscripts.getInstance()
+                            .createTranscript(ticket.getTextChannel(), "transcript-" + ticketId + ".html");
+
+                    var logChannel = jda.getGuildById(config.getServerId()).getTextChannelById(config.getLogChannel());
+                    if (logChannel != null) {
+                        var uploadMessage = logChannel.sendFiles(htmlTranscriptUpload).complete();
+                        transcriptUrl = uploadMessage.getJumpUrl();
+                    }
+                } else {
+                    log.warn("No messages found in ticket #{} channel, skipping transcript generation", ticketId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to generate/upload HTML transcript for ticket #{}: {}", ticketId, e.getMessage());
+            // Continue without transcript - don't let this block ticket closure
+        }
+        return transcriptUrl;
+    }
+
+    public void appendTranscriptLinkAndSendCloseEmbed(String transcriptUrl, Ticket ticket, EmbedBuilder notification) {
+        // Only add transcript link for non-sensitive categories
+        if (transcriptUrl != null && !ticket.getCategory().isSensitive()) {
+            notification.addField("📝 Transcript", "[Hier klicken](" + transcriptUrl + ")", false);
+        }
+
+        for (Long channelId : config.getRatingNotificationChannels()) {
+            var channel = jda.getTextChannelById(channelId);
+            if (channel != null) {
+                channel.sendMessageEmbeds(notification.build()).queue(
+                    success -> log.info("Rating notification sent successfully to channel {}", channelId),
+                    error -> log.error("Failed to send rating notification to channel {}: {}", channelId, error.getMessage())
+                );
+            } else {
+                log.warn("Rating notification channel not found: {}", channelId);
+            }
         }
     }
 }

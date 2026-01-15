@@ -33,6 +33,7 @@ public class XpService {
      * Award XP to a helper for resolving a ticket.
      * This method collects ticket data and sends it to the API asynchronously.
      * No need to wait since we send the data directly (no channel fetch needed on backend).
+     * The backend API will send the XP notification in Discord.
      *
      * @param ticket        The ticket being closed
      * @param rating        The star rating given by the ticket owner (1-5), can be null if skipped
