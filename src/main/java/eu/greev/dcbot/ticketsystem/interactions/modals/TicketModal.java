@@ -75,6 +75,7 @@ public class TicketModal implements Interaction {
                 .addField("✅ **Ticket created**", "Successfully created a ticket for you " + ticket.getTextChannel().getAsMention(), false);
         event.getHook().sendMessageEmbeds(builder.build()).setEphemeral(true).queue();
 
+        ticket.getTranscript().addInfoMessage("Category", category.getLabel(), ticket.getId());
         for(Map.Entry<String, String> entry : info.entrySet()) {
             ticket.getTranscript().addInfoMessage(entry.getKey(), entry.getValue(), ticket.getId());
         }
