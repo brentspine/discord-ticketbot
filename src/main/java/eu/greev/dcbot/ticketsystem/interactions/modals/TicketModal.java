@@ -63,16 +63,20 @@ public class TicketModal implements Interaction {
 
         Optional<String> error = ticketService.createNewTicket(info, category, event.getUser());
 
-        if (error.isEmpty()) {
-            Ticket ticket = ticketService.getTicketByTicketId(ticketData.getLastTicketId());
-            builder.setAuthor(event.getMember().getEffectiveName(), null, event.getMember().getEffectiveAvatarUrl())
-                    .setColor(Color.decode(config.getColor()))
-                    .addField("✅ **Ticket created**", "Successfully created a ticket for you " + ticket.getTextChannel().getAsMention(), false);
-            event.getHook().sendMessageEmbeds(builder.build()).setEphemeral(true).queue();
-        } else {
+        if (error.isPresent()) {
             builder.addField("❌ **Creating ticket failed**", error.get(), false);
-
             event.getHook().sendMessageEmbeds(builder.build()).setEphemeral(true).queue();
+            return;
+        }
+
+        Ticket ticket = ticketService.getTicketByTicketId(ticketData.getLastTicketId());
+        builder.setAuthor(event.getMember().getEffectiveName(), null, event.getMember().getEffectiveAvatarUrl())
+                .setColor(Color.decode(config.getColor()))
+                .addField("✅ **Ticket created**", "Successfully created a ticket for you " + ticket.getTextChannel().getAsMention(), false);
+        event.getHook().sendMessageEmbeds(builder.build()).setEphemeral(true).queue();
+
+        for(Map.Entry<String, String> entry : info.entrySet()) {
+            ticket.getTranscript().addInfoMessage(entry.getKey(), entry.getValue(), ticket.getId());
         }
     }
 
