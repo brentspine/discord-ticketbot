@@ -73,23 +73,6 @@ docker run -d --name ticketbot -v ${PWD}/Tickets:/app/Tickets discord-ticketbot
 
 ---
 
-## Method 3: Run from IntelliJ IDEA
-
-Since you're already in IntelliJ IDEA:
-
-1. **Open the project** (already done ✓)
-2. **Configure the bot**:
-    - Create a `Tickets` folder in the project root
-    - Copy `config.example.yml` to `Tickets/config.yml`
-    - Edit `Tickets/config.yml` and add your bot token
-3. **Run the Main class**:
-    - Open `src/main/java/eu/greev/dcbot/Main.java`
-    - Right-click on the `Main` class
-    - Select "Run 'Main.main()'"
-4. **Set up in Discord**: Use `/ticket setup` command
-
----
-
 ## Getting Your Bot Token
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
