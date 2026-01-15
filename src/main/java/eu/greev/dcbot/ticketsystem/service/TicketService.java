@@ -860,4 +860,24 @@ public class TicketService {
             }
         }
     }
+
+    public boolean isUserPrivilegedSupporter(Member member) {
+        Guild guild = jda.getGuildById(config.getServerId());
+        if (guild == null) {
+            return false;
+        }
+
+        // Check if the member has any of the privileged roles
+        List<Long> privilegedRoles = config.getPrivilegedSupporterRoles();
+        if (privilegedRoles != null) {
+            for (Long roleId : privilegedRoles) {
+                Role role = guild.getRoleById(roleId);
+                if (role != null && member.getRoles().contains(role)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

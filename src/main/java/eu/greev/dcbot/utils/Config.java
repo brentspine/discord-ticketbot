@@ -8,8 +8,10 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +37,7 @@ public class Config {
     private int maxTicketsPerUser = 3;
     private List<Long> addToTicketThread;
     private List<Long> ratingNotificationChannels = new ArrayList<>();
+    private List<Long> privilegedSupporterRoles = new ArrayList<>();
     private Map<Long, String> claimEmojis = new HashMap<>();
     private Map<String, Long> categories = new HashMap<>();
     private Map<String, List<Long>> categoryRoles = new HashMap<>();
@@ -42,6 +45,43 @@ public class Config {
     // XP System Integration
     private String xpApiUrl = "";
     private String xpApiKey = "";
+
+    public String toYamlString(boolean redactSensitive) {
+        DumperOptions options = new DumperOptions();
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        options.setPrettyFlow(true);
+        Yaml yaml = new Yaml(options);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("serverId", serverId);
+        payload.put("staffId", staffId);
+        payload.put("unclaimedCategory", unclaimedCategory);
+        payload.put("baseChannel", baseChannel);
+        payload.put("logChannel", logChannel);
+        payload.put("ratingStatsChannel", ratingStatsChannel);
+        payload.put("specialStatsChannel", specialStatsChannel);
+        payload.put("devMode", devMode);
+        payload.put("ratingReminderIntervalHours", ratingReminderIntervalHours);
+        payload.put("ratingMaxReminders", ratingMaxReminders);
+        payload.put("pendingRatingCategory", pendingRatingCategory);
+        payload.put("serverLogo", serverLogo);
+        payload.put("serverName", serverName);
+        payload.put("color", color);
+        payload.put("token", redactSensitive && token != null ? "<redacted>" : token);
+        payload.put("maxTicketsPerUser", maxTicketsPerUser);
+        payload.put("addToTicketThread", addToTicketThread);
+        payload.put("ratingNotificationChannels", ratingNotificationChannels);
+        payload.put("privilegedSupporterRoles", privilegedSupporterRoles);
+        payload.put("claimEmojis", claimEmojis);
+        payload.put("categories", categories);
+        payload.put("categoryRoles", categoryRoles);
+        payload.put("xpApiUrl", xpApiUrl);
+        payload.put("xpApiKey", redactSensitive && xpApiKey != null ? "<redacted>" : xpApiKey);
+
+        StringWriter writer = new StringWriter();
+        yaml.dump(payload, writer);
+        return writer.toString();
+    }
 
     public void dumpConfig(String path) {
         DumperOptions options = new DumperOptions();

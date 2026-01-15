@@ -50,11 +50,12 @@ public class TicketModal implements Interaction {
                 EmbedBuilder errorEmbed = new EmbedBuilder()
                         .setColor(Color.RED)
                         .setTitle("Invalid Link")
-                        .setDescription("Please provide a valid **mclo.gs** link!\n\n" +
-                                "**How to create one:**\n" +
-                                "1. Go to [mclo.gs](https://mclo.gs)\n" +
-                                "2. Upload your log file\n" +
-                                "3. Copy the link")
+                        .setDescription("""
+                                Please provide a valid **mclo.gs** link!\n\n
+                                "**How to create one:**\n
+                                "1. Go to [mclo.gs](https://mclo.gs)\n
+                                "2. Upload your log file\n
+                                "3. Copy the link""")
                         .setFooter(config.getServerName(), config.getServerLogo());
                 event.getHook().sendMessageEmbeds(errorEmbed.build()).setEphemeral(true).queue();
                 return;
@@ -77,7 +78,7 @@ public class TicketModal implements Interaction {
 
         ticket.getTranscript().addInfoMessage("Category", category.getLabel(), ticket.getId());
         for(Map.Entry<String, String> entry : info.entrySet()) {
-            ticket.getTranscript().addInfoMessage(entry.getKey(), entry.getValue(), ticket.getId());
+            ticket.getTranscript().addInfoMessage(entry.getKey().replace(" ", "-"), entry.getValue(), ticket.getId());
         }
     }
 

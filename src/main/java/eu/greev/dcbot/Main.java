@@ -136,6 +136,7 @@ public class Main {
                 .addSubcommands(new SubcommandData("get-tickets", "Get all ticket ids by member")
                         .addOption(OptionType.USER, "member", "The owner of the tickets", true))
                 .addSubcommands(new SubcommandData("stats", "Show general ticket statistics"))
+                .addSubcommands(new SubcommandData("config-dump", "Dump the current ticket configuration"))
                 .addSubcommands(new SubcommandData("setup", "Setup the System")
                         .addOption(OptionType.CHANNEL, "base-channel", "The channel where the ticket select menu should be", true)
                         .addOption(OptionType.CHANNEL, "unclaimed-category", "The category where the tickets should create", true)
@@ -185,6 +186,7 @@ public class Main {
         registerInteraction("info", new LoadTicket(config, ticketService, missingPerm, jda));
         registerInteraction("get-tickets", new GetTickets(config, ticketService, missingPerm, jda));
         registerInteraction("stats", new Stats(config, ticketService, missingPerm, jda));
+        registerInteraction("config-dump", new ConfigDump(config, ticketService, missingPerm, jda));
         registerInteraction("add", new AddMember(config, jda, ticketService, wrongChannel, missingPerm));
         registerInteraction("remove", new RemoveMember(config, ticketService, missingPerm, wrongChannel, jda));
         registerInteraction("transfer", new Transfer(config, ticketService, missingPerm, wrongChannel, jda));
@@ -276,3 +278,4 @@ public class Main {
         CATEGORIES.add(category);
     }
 }
+

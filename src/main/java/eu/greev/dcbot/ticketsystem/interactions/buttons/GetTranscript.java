@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.utils.FileUpload;
 
 import java.awt.*;
+import java.util.Objects;
 
 @AllArgsConstructor
 public class GetTranscript extends AbstractButton {
@@ -33,6 +34,17 @@ public class GetTranscript extends AbstractButton {
             EmbedBuilder error = new EmbedBuilder()
                     .setColor(Color.RED)
                     .setDescription("❌ **Something went wrong, please report this to the Bot creator!**");
+            event.replyEmbeds(error.build()).setEphemeral(true).queue();
+            return;
+        }
+
+        boolean isSensitive = ticket.getCategory().isSensitive();
+        boolean isTicketOwner = ticket.getOwner().getId().equals(Objects.requireNonNull(event.getMember()).getUser().getId());
+        boolean isPrivilegedSupporter = ticketService.isUserPrivilegedSupporter(event.getMember());
+        if (isSensitive && !(isTicketOwner || isPrivilegedSupporter)) {
+            EmbedBuilder error = new EmbedBuilder()
+                    .setColor(Color.RED)
+                    .setDescription("❌ **This ticket category is marked as sensitive, transcript cannot be viewed by you!**");
             event.replyEmbeds(error.build()).setEphemeral(true).queue();
             return;
         }
