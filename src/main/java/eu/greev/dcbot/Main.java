@@ -217,6 +217,11 @@ public class Main {
     }
 
     private static void initDatasource() {
+        // Set SQLite temp directory to avoid permission issues with C:\Windows\TEMP
+        String sqliteTempDir = new File("./Tickets/temp").getAbsolutePath();
+        new File(sqliteTempDir).mkdirs();
+        System.setProperty("org.sqlite.tmpdir", sqliteTempDir);
+
         SQLiteDataSource ds = new SQLiteDataSource();
         ds.setUrl("jdbc:sqlite:./Tickets/tickets.db");
         jdbi = Jdbi.create(ds);
