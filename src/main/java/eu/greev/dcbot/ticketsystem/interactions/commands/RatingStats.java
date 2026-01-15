@@ -1,6 +1,7 @@
 package eu.greev.dcbot.ticketsystem.interactions.commands;
 
 import eu.greev.dcbot.ticketsystem.service.RatingData;
+import eu.greev.dcbot.ticketsystem.service.SupporterRatingStatsHelper;
 import eu.greev.dcbot.ticketsystem.service.TicketService;
 import eu.greev.dcbot.utils.Config;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -10,7 +11,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 
 import java.awt.*;
 import java.util.Map;
-import java.util.Optional;
 
 public class RatingStats extends AbstractCommand {
     private final RatingData ratingData;
@@ -74,31 +74,21 @@ public class RatingStats extends AbstractCommand {
     }
 
     private String formatSupporterStats(Map<String, Double> avgRatings, Map<String, Integer> countRatings) {
-        var sortedEntries = avgRatings.entrySet().stream()
-                .sorted((a, b) -> {
-                    int cmp = Double.compare(b.getValue(), a.getValue());
-                    if (cmp == 0) {
-                        return Integer.compare(
-                                countRatings.getOrDefault(b.getKey(), 0),
-                                countRatings.getOrDefault(a.getKey(), 0)
-                        );
-                    }
-                    return cmp;
-                })
-                .limit(5)
-                .toList();
+        var topSupporters = SupporterRatingStatsHelper.topSupporters(avgRatings, countRatings, 5);
 
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < sortedEntries.size(); i++) {
-            var e = sortedEntries.get(i);
-            String mention = Optional.ofNullable(jda.retrieveUserById(e.getKey()).complete())
-                    .map(u -> u.getAsMention())
-                    .orElse("<@" + e.getKey() + ">");
-            double avg = e.getValue();
-            int count = countRatings.getOrDefault(e.getKey(), 0);
-            String stars = getStarDisplay(avg);
-            sb.append(String.format("%d. %s %s (%.2f avg, %d ratings)", i + 1, mention, stars, avg, count));
-            if (i < sortedEntries.size() - 1) {
+        for (int i = 0; i < topSupporters.size(); i++) {
+            var entry = topSupporters.get(i);
+            String mention = getUserMention(entry.supporterId());
+            double avg = entry.avgRating();
+            int count = entry.ratingCount();
+            sb.append(String.format("%d. %s %s (%.2f avg, %d ratings)",
+                    i + 1,
+                    mention,
+                    SupporterRatingStatsHelper.starDisplay(avg),
+                    avg,
+                    count));
+            if (i < topSupporters.size() - 1) {
                 sb.append("\n");
             }
         }
@@ -106,8 +96,18 @@ public class RatingStats extends AbstractCommand {
     }
 
     private String getStarDisplay(double avg) {
-        int fullStars = (int) Math.round(avg);
-        fullStars = Math.clamp(fullStars, 0, 5);
-        return "\u2605".repeat(fullStars) + "\u2606".repeat(5 - fullStars);
+        return SupporterRatingStatsHelper.starDisplay(avg);
+    }
+
+    private String getUserMention(String id) {
+        try {
+            var user = jda.retrieveUserById(id).complete();
+            if (user != null) {
+                return user.getAsMention();
+            }
+        } catch (Exception ignored) {
+            // fall through to default mention
+        }
+        return "<@" + id + ">";
     }
 }
