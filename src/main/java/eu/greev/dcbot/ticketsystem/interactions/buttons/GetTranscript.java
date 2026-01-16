@@ -10,7 +10,6 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.utils.FileUpload;
 
 import java.awt.*;
-import java.util.Objects;
 
 @AllArgsConstructor
 public class GetTranscript extends AbstractButton {
@@ -27,7 +26,7 @@ public class GetTranscript extends AbstractButton {
             event.replyEmbeds(error.build()).setEphemeral(true).queue();
             return;
         }
-        int ticketID = Integer.parseInt(event.getMessage().getEmbeds().get(0).getTitle().replace("Ticket #", ""));
+        int ticketID = Integer.parseInt(event.getMessage().getEmbeds().getFirst().getTitle().replace("Ticket #", ""));
         Ticket ticket = ticketService.getTicketByTicketId(ticketID);
 
         if (ticket == null) {
@@ -39,7 +38,7 @@ public class GetTranscript extends AbstractButton {
         }
 
         boolean isSensitive = ticket.getCategory().isSensitive();
-        boolean isTicketOwner = ticket.getOwner().getId().equals(Objects.requireNonNull(event.getMember()).getUser().getId());
+        boolean isTicketOwner = event.getMember() != null && ticket.getOwner().getId().equals(event.getMember().getUser().getId()); // getMember can be null when user left the server
         boolean isPrivilegedSupporter = ticketService.isUserPrivilegedSupporter(event.getMember());
         if (isSensitive && !(isTicketOwner || isPrivilegedSupporter)) {
             EmbedBuilder error = new EmbedBuilder()
@@ -55,7 +54,7 @@ public class GetTranscript extends AbstractButton {
 
         EmbedBuilder builder = new EmbedBuilder()
                 .setFooter(config.getServerName(), config.getServerLogo())
-                .setAuthor(event.getMember().getEffectiveName(), null, event.getMember().getEffectiveAvatarUrl())
+                .setAuthor(event.getMember() != null ? event.getMember().getEffectiveName() : "Unknown", null, event.getMember().getEffectiveAvatarUrl())
                 .setColor(Color.decode(config.getColor()))
                 .setDescription("Sent transcript of Ticket #" + ticketID + " via DM");
         event.replyEmbeds(builder.build()).setEphemeral(true).queue();
