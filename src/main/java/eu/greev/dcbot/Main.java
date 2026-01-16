@@ -28,6 +28,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.Category;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandGroupData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -118,7 +119,8 @@ public class Main {
 
         ticketService.loadOverflowCategories();
 
-        jda.updateCommands().addCommands(Commands.slash("ticket", "Manage the ticket system")
+        SlashCommandData ticketCommand = Commands.slash("ticket", "Manage the ticket system");
+        jda.updateCommands().addCommands(ticketCommand
                 .addSubcommands(new SubcommandData("add", "Add a User to this ticket")
                         .addOption(OptionType.USER, "member", "The user adding to the current ticket", true))
                 .addSubcommands(new SubcommandData("remove", "Remove a User from this ticket")
@@ -136,7 +138,6 @@ public class Main {
                 .addSubcommands(new SubcommandData("get-tickets", "Get all ticket ids by member")
                         .addOption(OptionType.USER, "member", "The owner of the tickets", true))
                 .addSubcommands(new SubcommandData("stats", "Show general ticket statistics"))
-                .addSubcommands(new SubcommandData("config-dump", "Dump the current ticket configuration"))
                 .addSubcommands(new SubcommandData("setup", "Setup the System")
                         .addOption(OptionType.CHANNEL, "base-channel", "The channel where the ticket select menu should be", true)
                         .addOption(OptionType.CHANNEL, "unclaimed-category", "The category where the tickets should create", true)
@@ -186,7 +187,6 @@ public class Main {
         registerInteraction("info", new LoadTicket(config, ticketService, missingPerm, jda));
         registerInteraction("get-tickets", new GetTickets(config, ticketService, missingPerm, jda));
         registerInteraction("stats", new Stats(config, ticketService, missingPerm, jda));
-        registerInteraction("config-dump", new ConfigDump(config, ticketService, missingPerm, jda));
         registerInteraction("add", new AddMember(config, jda, ticketService, wrongChannel, missingPerm));
         registerInteraction("remove", new RemoveMember(config, ticketService, missingPerm, wrongChannel, jda));
         registerInteraction("transfer", new Transfer(config, ticketService, missingPerm, wrongChannel, jda));
@@ -214,6 +214,12 @@ public class Main {
         registerInteraction("rating-stats", new RatingStats(config, ticketService, missingPerm, jda, ratingData));
         registerInteraction("debug-stats", new DebugStats(config, ticketService, missingPerm, jda));
         registerInteraction("set-privacy", new SetPrivacy(config, ticketService, missingPerm, jda, supporterSettingsData));
+
+        if (config.isDevMode()) {
+            log.warn("Dev mode enabled, registering dev commands");
+            ticketCommand.addSubcommands(new SubcommandData("config-dump", "Dump the current ticket configuration"));
+            registerInteraction("config-dump", new ConfigDump(config, ticketService, missingPerm, jda));
+        }
 
         log.info("Started: {}", OffsetDateTime.now(ZoneId.systemDefault()));
 
