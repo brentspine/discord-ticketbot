@@ -215,12 +215,6 @@ public class Main {
         registerInteraction("debug-stats", new DebugStats(config, ticketService, missingPerm, jda));
         registerInteraction("set-privacy", new SetPrivacy(config, ticketService, missingPerm, jda, supporterSettingsData));
 
-        if (config.isDevMode()) {
-            log.warn("Dev mode enabled, registering dev commands");
-            ticketCommand.addSubcommands(new SubcommandData("config-dump", "Dump the current ticket configuration"));
-            registerInteraction("config-dump", new ConfigDump(config, ticketService, missingPerm, jda));
-        }
-
         log.info("Started: {}", OffsetDateTime.now(ZoneId.systemDefault()));
 
     }
