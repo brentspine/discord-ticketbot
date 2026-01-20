@@ -38,7 +38,7 @@ public class HourlyScheduler {
     private XpService xpService;
 
     public void start() {
-        scheduler.scheduleAtFixedRate(this::run, getInitialDelay(), 60L * 60L, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::run, getInitialDelay(), 1, TimeUnit.HOURS);
     }
 
     private int getInitialDelay() {
