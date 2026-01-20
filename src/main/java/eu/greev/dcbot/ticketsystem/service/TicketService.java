@@ -1,5 +1,6 @@
 package eu.greev.dcbot.ticketsystem.service;
 
+import lombok.Getter;
 import me.ryzeon.transcripts.DiscordHtmlTranscripts;
 import eu.greev.dcbot.Main;
 import eu.greev.dcbot.ticketsystem.categories.ICategory;
@@ -36,13 +37,10 @@ public class TicketService {
     private final JDA jda;
     private final Config config;
     private final Jdbi jdbi;
+    @Getter
     private final TicketData ticketData;
     private final Set<Ticket> allCurrentTickets = new HashSet<>();
     public static final String WAITING_EMOTE = "\uD83D\uDD50";
-
-    public TicketData getTicketData() {
-        return ticketData;
-    }
 
     public TicketService(JDA jda, Config config, Jdbi jdbi, TicketData ticketData) {
         this.jda = jda;
@@ -251,7 +249,7 @@ public class TicketService {
                 .setFooter(config.getServerName(), config.getServerLogo());
 
         // DM the owner (best-effort)
-        var guild = jda.getGuildById(config.getServerId());
+        Guild guild = jda.getGuildById(config.getServerId());
         if (guild != null && ticket.getOwner().getMutualGuilds().contains(guild)) {
             try {
                 ticket.getOwner().openPrivateChannel()
@@ -264,7 +262,7 @@ public class TicketService {
 
         // Always send the close embed to the configured log channel (if configured)
         if (config.getLogChannel() != 0) {
-            var logChannel = guild == null ? null : guild.getTextChannelById(config.getLogChannel());
+            TextChannel logChannel = guild == null ? null : guild.getTextChannelById(config.getLogChannel());
             if (logChannel != null) {
                 logChannel.sendMessageEmbeds(builder.build()).queue(
                         success -> log.debug("Sent close embed for ticket #{} to log channel {} (sensitive={})", ticketId, config.getLogChannel(), isSensitive),
@@ -811,7 +809,7 @@ public class TicketService {
         try {
             if (ticket.getTextChannel() != null && config.getLogChannel() != 0) {
                 // Fetch messages first to avoid NPE in library when handling message references
-                var messages = ticket.getTextChannel().getIterableHistory()
+                List<net.dv8tion.jda.api.entities.Message> messages = ticket.getTextChannel().getIterableHistory()
                         .takeAsync(1000)
                         .get();
 
@@ -819,9 +817,9 @@ public class TicketService {
                     FileUpload htmlTranscriptUpload = DiscordHtmlTranscripts.getInstance()
                             .createTranscript(ticket.getTextChannel(), "transcript-" + ticketId + ".html");
 
-                    var logChannel = jda.getGuildById(config.getServerId()).getTextChannelById(config.getLogChannel());
+                    TextChannel logChannel = jda.getGuildById(config.getServerId()).getTextChannelById(config.getLogChannel());
                     if (logChannel != null) {
-                        var uploadMessage = logChannel.sendFiles(htmlTranscriptUpload).complete();
+                        net.dv8tion.jda.api.entities.Message uploadMessage = logChannel.sendFiles(htmlTranscriptUpload).complete();
                         transcriptUrl = uploadMessage.getJumpUrl();
                     }
                 } else {
@@ -843,13 +841,13 @@ public class TicketService {
             notification.addField("📝 Transcript", "[Hier klicken](" + transcriptUrl + ")", false);
         }
 
-        var channels = config.getRatingNotificationChannels();
+        List<Long> channels = config.getRatingNotificationChannels();
         if (channels == null || channels.isEmpty()) {
             return;
         }
 
         for (Long channelId : channels) {
-            var channel = jda.getTextChannelById(channelId);
+            TextChannel channel = jda.getTextChannelById(channelId);
             if (channel != null) {
                 channel.sendMessageEmbeds(notification.build()).queue(
                         success -> log.info("Close embed send successfully to {}", channelId),

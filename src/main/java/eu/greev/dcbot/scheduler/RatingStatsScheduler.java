@@ -299,7 +299,7 @@ public class RatingStatsScheduler {
     private String formatTicketStats(Map<String, Integer> ticketsBySupporter, int limit) {
         StringBuilder sb = new StringBuilder();
         int count = 0;
-        for (var entry : ticketsBySupporter.entrySet()) {
+        for (Map.Entry<String, Integer> entry : ticketsBySupporter.entrySet()) {
             if (count >= limit) break;
             String userId = entry.getKey();
             boolean hideStats = supporterSettingsData.isHideStats(userId);
@@ -314,7 +314,7 @@ public class RatingStatsScheduler {
     private String formatTicketStatsRanked(Map<String, Integer> ticketsBySupporter, int limit) {
         StringBuilder sb = new StringBuilder();
         int rank = 1;
-        for (var entry : ticketsBySupporter.entrySet()) {
+        for (Map.Entry<String, Integer> entry : ticketsBySupporter.entrySet()) {
             if (rank > limit) break;
             String userId = entry.getKey();
             boolean hideStats = supporterSettingsData.isHideStats(userId);
@@ -328,9 +328,10 @@ public class RatingStatsScheduler {
     }
 
     private String formatRatingStats(Map<String, Double> avgRatings, Map<String, Integer> countRatings, int limit) {
-        var topSupporters = SupporterRatingStatsHelper.topSupporters(avgRatings, countRatings, limit);
+        List<SupporterRatingStatsHelper.SupporterRatingEntry> topSupporters
+                = SupporterRatingStatsHelper.topSupporters(avgRatings, countRatings, limit);
         StringBuilder sb = new StringBuilder();
-        for (var entry : topSupporters) {
+        for (SupporterRatingStatsHelper.SupporterRatingEntry entry : topSupporters) {
             String userId = entry.supporterId();
             boolean hideStats = supporterSettingsData.isHideStats(userId);
             String mention = hideStats ? "Anonym" : getUserMention(userId);
@@ -353,10 +354,10 @@ public class RatingStatsScheduler {
     }
 
     private String formatRatingStatsRanked(Map<String, Double> avgRatings, Map<String, Integer> countRatings, int limit) {
-        var topSupporters = SupporterRatingStatsHelper.topSupporters(avgRatings, countRatings, limit);
         StringBuilder sb = new StringBuilder();
+        List<SupporterRatingStatsHelper.SupporterRatingEntry> topSupporters = SupporterRatingStatsHelper.topSupporters(avgRatings, countRatings, limit);
         for (int i = 0; i < topSupporters.size(); i++) {
-            var entry = topSupporters.get(i);
+            SupporterRatingStatsHelper.SupporterRatingEntry entry = topSupporters.get(i);
             int rank = i + 1;
             String userId = entry.supporterId();
             boolean hideStats = supporterSettingsData.isHideStats(userId);

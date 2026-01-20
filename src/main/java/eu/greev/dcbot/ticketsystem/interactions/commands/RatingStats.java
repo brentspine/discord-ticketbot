@@ -6,10 +6,12 @@ import eu.greev.dcbot.ticketsystem.service.TicketService;
 import eu.greev.dcbot.utils.Config;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.Event;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
 import java.awt.*;
+import java.util.List;
 import java.util.Map;
 
 public class RatingStats extends AbstractCommand {
@@ -74,11 +76,11 @@ public class RatingStats extends AbstractCommand {
     }
 
     private String formatSupporterStats(Map<String, Double> avgRatings, Map<String, Integer> countRatings) {
-        var topSupporters = SupporterRatingStatsHelper.topSupporters(avgRatings, countRatings, 5);
+        List<SupporterRatingStatsHelper.SupporterRatingEntry> topSupporters = SupporterRatingStatsHelper.topSupporters(avgRatings, countRatings, 5);
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < topSupporters.size(); i++) {
-            var entry = topSupporters.get(i);
+            SupporterRatingStatsHelper.SupporterRatingEntry entry = topSupporters.get(i);
             String mention = getUserMention(entry.supporterId());
             double avg = entry.avgRating();
             int count = entry.ratingCount();
@@ -101,7 +103,7 @@ public class RatingStats extends AbstractCommand {
 
     private String getUserMention(String id) {
         try {
-            var user = jda.retrieveUserById(id).complete();
+            User user = jda.retrieveUserById(id).complete();
             if (user != null) {
                 return user.getAsMention();
             }
