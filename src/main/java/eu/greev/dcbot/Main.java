@@ -50,7 +50,7 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@SuppressWarnings({"squid:S1192", "squid:S2386"})
+@SuppressWarnings({"squid:S1192"}) // String literals should not be duplicated
 @Slf4j
 public class Main {
     public static final Map<String, Interaction> INTERACTIONS = new HashMap<>();
